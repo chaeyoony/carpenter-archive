@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>뚝딱뚝딱 아카이브 · 목수의 작업 기록</title>
+<meta name="description" content="전국을 돌아다니며 목수의 손으로 만들어가는 작업의 기록들">
+<meta property="og:title" content="뚝딱뚝딱 아카이브">
+<meta property="og:description" content="목수의 손으로 만들어가는 작업의 기록들 · 대한민국 곳곳에서">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='6' width='17' height='11' rx='2' fill='%231e3a2a'/%3E%3Cpath d='M15 15 L23 30 L27 28 L19 13 Z' fill='%238b5a2b'/%3E%3C/svg%3E">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f1e8;
+    --card: #ffffff;
+    --ink: #1a2e1f;
+    --ink-soft: #4a5d4f;
+    --ink-muted: #7d8b80;
+    --line: #d9d2c2;
+    --green-deep: #1e3a2a;
+    --green: #2d5a3d;
+    --green-mid: #4a7c59;
+    --green-soft: #8fae97;
+    --green-pale: #d5e0d5;
+    --green-paler: #eaf0e8;
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M15 13 L23 28 L27 26 L19 11 Z' fill='%238b5a2b' stroke='%231a1a1a' stroke-width='1.2' stroke-linejoin='round'/%3E%3Crect x='4' y='4' width='17' height='11' rx='1.5' fill='%232d5a3d' stroke='%231a1a1a' stroke-width='1.2'/%3E%3Crect x='6' y='6' width='13' height='2' rx='0.5' fill='%234a7c59'/%3E%3C/svg%3E") 4 9, auto;
+  }
+  .province-path.clickable, .photo-card, .back-btn, .close-btn,
+  .breadcrumb span, .info-btn, header h1 {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg transform='rotate(-20 16 16)'%3E%3Cpath d='M15 13 L23 28 L27 26 L19 11 Z' fill='%238b5a2b' stroke='%231a1a1a' stroke-width='1.2' stroke-linejoin='round'/%3E%3Crect x='4' y='4' width='17' height='11' rx='1.5' fill='%231e3a2a' stroke='%231a1a1a' stroke-width='1.2'/%3E%3Crect x='6' y='6' width='13' height='2' rx='0.5' fill='%234a7c59'/%3E%3C/g%3E%3C/svg%3E") 6 6, pointer;
+  }
+
+  header {
+    padding: 14px 36px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+  }
+  header h1 { font-size: 22px; letter-spacing: 1px; color: var(--green-deep); }
+  header p.subtitle { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+  .header-right { display: flex; align-items: center; gap: 14px; }
+  .stat { font-size: 13px; color: var(--green); font-weight: 600; }
+  .info-btn {
+    background: transparent;
+    border: 1px solid var(--green-mid);
+    color: var(--green);
+    padding: 5px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-family: inherit;
+  }
+  .info-btn:hover { background: var(--green); color: #fff; }
+
+  .breadcrumb {
+    padding: 8px 36px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+  .breadcrumb span:hover { color: var(--green); text-decoration: underline; }
+  .breadcrumb .sep { margin: 0 8px; color: var(--line); cursor: inherit; }
+
+  .stage {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column;
+    padding: 4px 20px 12px;
+  }
+
+  /* 로딩 / 에러 */
+  .loading, .error {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ink-muted);
+    font-size: 14px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--green-pale);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error { color: #a04040; }
+  .error code { background: #f8e8e0; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+  /* 전국 지도 뷰 (2단 레이아웃) */
+  #mapView {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: row;
+    gap: 18px;
+    padding: 0 8px;
+  }
+  .intro-panel {
+    flex: 0 0 280px;
+    max-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    padding: 4px 4px 4px 0;
+  }
+  .map-panel {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 6px;
+  }
+  svg.korea-map {
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    flex: 1;
+    min-height: 0;
+  }
+  .hint {
+    flex-shrink: 0;
+    color: var(--ink-muted);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  /* 소개 카드 */
+  .intro-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 18px 18px;
+  }
+  .intro-card .photo {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: var(--green-paler) url('https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400') center/cover;
+    border-radius: 10px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .intro-card .photo::after {
+    content: "사진을 여기 넣어주세요";
+    position: absolute;
+    inset: auto 0 8px 0;
+    text-align: center;
+    font-size: 10px;
+    color: rgba(255,255,255,0.85);
+    background: rgba(30,58,42,0.55);
+    padding: 3px 0;
+    letter-spacing: 1px;
+  }
+  .intro-card h2 {
+    font-size: 18px;
+    color: var(--green-deep);
+    margin-bottom: 4px;
+  }
+  .intro-card .role-tag {
+    display: inline-block;
+    font-size: 11px;
+    color: var(--green);
+    background: var(--green-paler);
+    padding: 3px 8px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  .intro-card p.bio {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.65;
+    margin-bottom: 12px;
+  }
+  .intro-card .specialty {
+    border-top: 1px dashed var(--line);
+    padding-top: 10px;
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    line-height: 1.7;
+  }
+  .intro-card .specialty b {
+    color: var(--green);
+    margin-right: 6px;
+  }
+
+  /* 공방 위치 카드 */
+  .workshop-card {
+    background: var(--green-deep);
+    color: #f5f1e8;
+    border-radius: 12px;
+    padding: 18px 20px 20px;
+  }
+  .workshop-card .label {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--green-soft);
+    margin-bottom: 6px;
+  }
+  .workshop-card h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .workshop-card p.greeting {
+    font-size: 12.5px;
+    color: #e8e0d2;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  .workshop-card .addr {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 1.55;
+    margin-bottom: 6px;
+  }
+  .workshop-card .addr svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .workshop-card .hours {
+    font-size: 12px;
+    color: var(--green-soft);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+  }
+  .workshop-card a.map-link {
+    display: inline-block;
+    margin-top: 12px;
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+  }
+  .workshop-card a.map-link:hover { background: rgba(255,255,255,0.22); }
+
+  @media (max-width: 720px) {
+    #mapView { flex-direction: column; gap: 12px; }
+    .intro-panel { flex: 0 0 auto; max-width: none; max-height: 40%; }
+  }
+
+  .province-path {
+    fill: var(--green-pale);
+    stroke: var(--green-mid);
+    stroke-width: 0.8;
+    transition: fill 0.25s ease;
+  }
+  .province-path.clickable:hover { fill: var(--green-soft); }
+  .province-path.has-work { fill: #b9ccba; }
+  .province-path.has-work:hover { fill: var(--green-mid); }
+  .province-label {
+    font-size: 11px;
+    fill: var(--ink);
+    pointer-events: none;
+    text-anchor: middle;
+    font-weight: 500;
+  }
+  .count-badge {
+    fill: var(--green-deep);
+    stroke: #fff;
+    stroke-width: 2;
+    pointer-events: none;
+  }
+  .count-text {
+    fill: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    text-anchor: middle;
+    pointer-events: none;
+  }
+
+  /* 상세 뷰 */
+  .detail-view { display: none; flex-direction: column; flex: 1; min-height: 0; }
+  .detail-view.active { display: flex; }
+  .detail-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; flex-shrink: 0;
+  }
+  .detail-header h2 { font-size: 22px; color: var(--green-deep); }
+  .back-btn {
+    background: #fff; border: 1px solid var(--green-mid);
+    color: var(--green); padding: 6px 14px;
+    border-radius: 20px; font-size: 12px;
+    font-family: inherit;
+  }
+  .back-btn:hover { background: var(--green); color: #fff; }
+
+  .canvas-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+  }
+  .region-canvas {
+    position: relative;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    width: min(100%, calc((100vh - 170px) * 4 / 3));
+    height: min(calc(100vw - 40px) * 3 / 4, 100%);
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+  }
+  .region-canvas svg.detail-map {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .sub-region-path {
+    fill: var(--green-paler);
+    stroke: var(--green-mid);
+    stroke-width: 1.2;
+  }
+  .sub-region-path.has-work {
+    fill: #b9ccba;
+    stroke: var(--green);
+    stroke-width: 2;
+  }
+  .sub-region-dot { fill: var(--green-deep); stroke: #fff; stroke-width: 2; }
+  .sub-region-name-bg { fill: #fff; stroke: var(--line); stroke-width: 0.6; }
+  .sub-region-name-text {
+    fill: var(--green-deep);
+    font-size: 13px;
+    font-weight: 700;
+    text-anchor: middle;
+    pointer-events: none;
+  }
+  .arrow-path {
+    fill: none;
+    stroke: var(--green);
+    stroke-width: 2;
+    stroke-dasharray: 6,4;
+    stroke-linecap: round;
+  }
+
+  .photo-card {
+    position: absolute;
+    width: 14%;
+    min-width: 110px;
+    transition: transform 0.2s ease;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+  }
+  .photo-card:hover { transform: translate(-50%, -50%) scale(1.06); z-index: 10; }
+  .photo-card img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 12px rgba(30,58,42,0.22);
+  }
+  .photo-card .caption {
+    font-size: 11px;
+    margin-top: 4px;
+    color: var(--ink-soft);
+    text-align: center;
+    line-height: 1.4;
+    background: #fff;
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+
+  /* 모달 공통 */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(26,46,31,0.6);
+    z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-wrap { position: relative; max-width: 620px; width: 100%; }
+  .modal { background: #fff; border-radius: 12px; max-height: 90vh; overflow-y: auto; }
+  .modal img { width: 100%; height: 300px; object-fit: cover; border-radius: 12px 12px 0 0; }
+  .modal-body { padding: 24px; }
+  .modal-body h3 { font-size: 20px; margin-bottom: 8px; color: var(--green-deep); }
+  .modal-meta {
+    color: var(--ink-muted); font-size: 12px; margin-bottom: 14px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .modal-meta .tag {
+    background: var(--green-pale); color: var(--green-deep);
+    padding: 2px 10px; border-radius: 12px; font-weight: 600;
+  }
+  .modal-desc { line-height: 1.7; color: var(--ink); font-size: 14px; }
+  .close-btn {
+    position: absolute; top: 12px; right: 12px;
+    width: 32px; height: 32px;
+    background: rgba(0,0,0,0.5); color: #fff;
+    border: none; border-radius: 50%;
+    font-size: 16px; z-index: 2;
+  }
+
+  /* 소개 모달 */
+  .contact-card { padding: 32px; }
+  .contact-card h3 { font-size: 22px; color: var(--green-deep); margin-bottom: 6px; }
+  .contact-card .role { color: var(--ink-muted); font-size: 13px; margin-bottom: 18px; }
+  .contact-card p.bio { color: var(--ink); line-height: 1.7; margin-bottom: 18px; font-size: 14px; }
+  .contact-list { list-style: none; padding: 0; }
+  .contact-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 10px;
+    font-size: 14px;
+  }
+  .contact-list li:last-child { border: none; }
+  .contact-list .label { color: var(--ink-muted); min-width: 70px; }
+  .contact-list .value { color: var(--ink); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>뚝딱뚝딱 아카이브</h1>
+    <p class="subtitle">목수의 손으로 만들어가는 작업의 기록들</p>
+  </div>
+  <div class="header-right">
+    <p class="stat" id="totalStat">집계 중...</p>
+    <button class="info-btn" onclick="openContact()">소개</button>
+  </div>
+</header>
+
+<div class="breadcrumb" id="breadcrumb">
+  <span onclick="showMap()">대한민국</span>
+</div>
+
+<div class="stage">
+  <div id="loadingView" class="loading">
+    <div class="spinner"></div>
+    <p>지도 데이터를 불러오는 중입니다...</p>
+  </div>
+
+  <div id="errorView" class="error" style="display:none">
+    <div style="max-width:520px; text-align:left; background:#fff; border:1px solid var(--line); border-radius:10px; padding:22px 26px; color:var(--ink); line-height:1.6;">
+      <p style="font-weight:700; color:#a04040; margin-bottom:10px;">지도 데이터를 불러오지 못했어요.</p>
+      <p id="errDetail" style="font-size:12px; color:var(--ink-muted); margin-bottom:14px;"></p>
+      <p style="font-size:13px; color:var(--ink-soft);">이 파일을 <b>컴퓨터에서 직접 열면</b> 브라우저 보안 정책(CORS) 때문에 외부 지도 데이터를 불러올 수 없어요. 다음 중 한 가지 방법으로 해결할 수 있습니다.</p>
+      <ol style="font-size:13px; color:var(--ink-soft); margin:10px 0 0 20px;">
+        <li style="margin-bottom:6px;"><b>Netlify Drop에 배포</b> (가장 간단) · <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--green);">app.netlify.com/drop</a> 에 이 HTML 파일을 끌어다 놓으면 즉시 인터넷 주소가 생깁니다.</li>
+        <li style="margin-bottom:6px;"><b>로컬 서버 실행</b> · 터미널에서 파일이 있는 폴더로 이동 후 <code style="background:#eaf0e8; padding:1px 5px; border-radius:3px;">python3 -m http.server 8000</code> → 브라우저에서 <code>http://localhost:8000</code> 열기.</li>
+        <li><b>VS Code의 Live Server</b> 확장으로 열기.</li>
+      </ol>
+      <p style="font-size:12px; color:var(--ink-muted); margin-top:12px;">※ 인터넷 연결이 필요한 이유: 실제 대한민국 행정구역 경계 데이터를 오픈 데이터에서 받아오기 때문입니다.</p>
+      <button onclick="retryLoad()" style="margin-top:14px; background:var(--green); color:#fff; border:none; padding:8px 16px; border-radius:6px; font-family:inherit; font-size:13px;">다시 시도</button>
+    </div>
+  </div>
+
+  <div id="mapView" style="display:none">
+    <!-- 왼쪽: 소개 + 공방 위치 -->
+    <aside class="intro-panel">
+      <div class="intro-card">
+        <!-- 사진 영역: 나중에 본인 사진 URL로 background-image 교체 -->
+        <div class="photo"></div>
+        <h2>민지현</h2>
+        <span class="role-tag">목조 건축 · 한옥 · 리모델링</span>
+        <p class="bio">
+          전국을 돌아다니며 나무로 집을 짓습니다. 한옥의 결을 살리는 일도, 현대 목조주택의 단단함을 빚는 일도 모두 손에서 시작합니다. 의뢰인의 이야기를 충분히 듣고, 그 자리에 가장 어울리는 형태를 함께 찾아갑니다.
+        </p>
+        <div class="specialty">
+          <div><b>주력</b>한옥, 목조주택, 상업공간 목구조</div>
+          <div><b>경력</b>15년차 · 누적 80여 건</div>
+          <div><b>활동</b>전국 출장 가능</div>
+        </div>
+      </div>
+
+      <div class="workshop-card">
+        <div class="label">WORKSHOP</div>
+        <h3>뚝딱뚝딱 공방</h3>
+        <p class="greeting">
+          나무 냄새 가득한 작업장에서 늘 무언가 만들고 있어요. 지나가는 길에 들러주셔도, 의뢰가 아니어도 언제든 환영합니다 :)
+        </p>
+        <div class="addr">
+          <svg width="14" height="16" viewBox="0 0 14 16" fill="none">
+            <path d="M7 0 C3.13 0 0 3.13 0 7 C0 11.5 7 16 7 16 S14 11.5 14 7 C14 3.13 10.87 0 7 0 Z M7 9.5 C5.62 9.5 4.5 8.38 4.5 7 S5.62 4.5 7 4.5 S9.5 5.62 9.5 7 S8.38 9.5 7 9.5 Z" fill="#8fae97"/>
+          </svg>
+          <span>서울시 양천구 목동중앙본로 41</span>
+        </div>
+        <div class="hours">평일 09:00 – 18:00 · 주말 예약제</div>
+        <a class="map-link" href="https://map.kakao.com/?q=서울시 양천구 목동중앙본로 41" target="_blank">카카오맵에서 보기 →</a>
+      </div>
+    </aside>
+
+    <!-- 오른쪽: 지도 -->
+    <div class="map-panel">
+      <svg class="korea-map" id="koreaMap" preserveAspectRatio="xMidYMid meet"></svg>
+      <p class="hint">지도 위의 지역을 눌러보세요</p>
+    </div>
+  </div>
+
+  <div id="detailView" class="detail-view">
+    <div class="detail-header">
+      <h2 id="detailTitle">지역</h2>
+      <button class="back-btn" onclick="showMap()">← 지도로 돌아가기</button>
+    </div>
+    <div class="canvas-wrap">
+      <div class="region-canvas" id="regionCanvas">
+        <svg class="detail-map" id="detailMap" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 작업 상세 모달 -->
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-wrap">
+    <button class="close-btn" onclick="closeModal()">×</button>
+    <div class="modal">
+      <img id="modalImg" src="" alt="">
+      <div class="modal-body">
+        <h3 id="modalTitle"></h3>
+        <div class="modal-meta">
+          <span id="modalDate"></span>
+          <span id="modalLocation"></span>
+          <span class="tag" id="modalType"></span>
+        </div>
+        <p class="modal-desc" id="modalDesc"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 소개 모달 -->
+<div class="modal-overlay" id="contactModal" onclick="if(event.target===this)closeContact()">
+  <div class="modal-wrap">
+    <button class="close-btn" onclick="closeContact()">×</button>
+    <div class="modal">
+      <div class="contact-card">
+        <h3>민지현</h3>
+        <p class="role">전국을 돌아다니는 목수 · 목조 건축 전문</p>
+        <p class="bio">한옥부터 현대 목조주택, 상업공간 목구조까지. 나무가 필요한 곳이라면 어디든 갑니다. 의뢰·문의는 아래 연락처로 편하게 주세요.</p>
+        <ul class="contact-list">
+          <li><span class="label">전화</span><span class="value">010-XXXX-XXXX</span></li>
+          <li><span class="label">이메일</span><span class="value">woodcraft@example.com</span></li>
+          <li><span class="label">인스타그램</span><span class="value">@woodcraft_archive</span></li>
+          <li><span class="label">활동 지역</span><span class="value">전국</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- D3.js (지도 렌더링용), PapaParse (CSV 파싱용) -->
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+<script>
+// ========== 구글 시트 CSV URL ==========
+// 시트에서 "파일 → 공유 → 웹에 게시 → CSV" 한 URL을 여기에 붙여넣기
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRPp8cwa9VZbUwrjZgeJAlsdzjoTUjXm5VQOmsDkAfQNRpe0ySw_c5L4hGmQcW5NsI3kk-DREi4esiI/pub?gid=782924561&single=true&output=csv';
+
+// ========== 외부 GeoJSON 소스 ==========
+// southkorea-maps 오픈 데이터 (공공데이터 기반 행정구역)
+// CDN 1순위 실패 시 순차적으로 2, 3순위 시도
+const PROV_URLS = [
+  'https://cdn.jsdelivr.net/gh/southkorea/southkorea-maps@master/kostat/2018/json/skorea-provinces-2018-geo.json',
+  'https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-provinces-2018-geo.json',
+  'https://cdn.statically.io/gh/southkorea/southkorea-maps/master/kostat/2018/json/skorea-provinces-2018-geo.json',
+];
+const MUNI_URLS = [
+  'https://cdn.jsdelivr.net/gh/southkorea/southkorea-maps@master/kostat/2018/json/skorea-municipalities-2018-geo.json',
+  'https://raw.githubusercontent.com/southkorea/southkorea-maps/master/kostat/2018/json/skorea-municipalities-2018-geo.json',
+  'https://cdn.statically.io/gh/southkorea/southkorea-maps/master/kostat/2018/json/skorea-municipalities-2018-geo.json',
+];
+
+// ========== 작업 데이터 (구글 시트에서 로드됨) ==========
+// 초기값은 빈 객체. loadProjects()에서 CSV를 읽어 채움.
+let projects = {};
+
+// 구글드라이브 공유 URL → <img src>에 쓸 수 있는 직접 URL로 변환
+// 지원하는 입력 형태:
+//   https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+//   https://drive.google.com/open?id=FILE_ID
+//   https://drive.google.com/uc?id=FILE_ID
+function convertDriveUrl(url) {
+  if (!url) return '';
+  url = url.trim();
+  // 이미 일반 이미지 URL (https://... .jpg 등)이면 그대로
+  if (!url.includes('drive.google.com') && !url.includes('googleusercontent.com')) {
+    return url;
+  }
+  // FILE_ID 추출 시도
+  let m = url.match(/\/file\/d\/([^/]+)/) ||
+          url.match(/[?&]id=([^&]+)/) ||
+          url.match(/\/d\/([^/]+)/);
+  if (m && m[1]) {
+    const fileId = m[1];
+    // 썸네일 API가 가장 안정적 (=w800으로 큰 썸네일)
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`;
+  }
+  return url;
+}
+
+// CSV 한 행을 works 엔트리로 변환
+function rowToWork(row) {
+  return {
+    region: (row.region || '').trim(),
+    title:  (row.title  || '').trim(),
+    date:   (row.date   || '').trim(),
+    type:   (row.type   || '').trim(),
+    img:    convertDriveUrl(row.img || ''),
+    desc:   (row.desc   || '').trim(),
+  };
+}
+
+// 구글 시트 CSV → projects 객체
+async function loadProjects() {
+  return new Promise((resolve, reject) => {
+    // 캐시 우회용 타임스탬프 (시트 수정 즉시 반영)
+    const url = SHEET_CSV_URL + (SHEET_CSV_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+    Papa.parse(url, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => {
+        const grouped = {};
+        let okCount = 0, skipCount = 0;
+        (result.data || []).forEach(row => {
+          const prov = (row.province || '').trim().toLowerCase();
+          const title = (row.title || '').trim();
+          // 필수값 검증
+          if (!prov || !title) { skipCount++; return; }
+          if (!grouped[prov]) grouped[prov] = { works: [] };
+          grouped[prov].works.push(rowToWork(row));
+          okCount++;
+        });
+        console.log(`[시트] 로드 완료: ${okCount}건 · ${Object.keys(grouped).length}개 지역 (건너뜀 ${skipCount})`);
+        resolve(grouped);
+      },
+      error: (err) => {
+        console.error('[시트] CSV 로드 실패:', err);
+        reject(err);
+      }
+    });
+  });
+}
+
+// ========== 시도 한글명 → 내부 ID ==========
+const PROVINCE_ID_MAP = {
+  "서울특별시":"seoul", "서울":"seoul",
+  "부산광역시":"busan", "부산":"busan",
+  "대구광역시":"daegu", "대구":"daegu",
+  "인천광역시":"incheon", "인천":"incheon",
+  "광주광역시":"gwangju", "광주":"gwangju",
+  "대전광역시":"daejeon", "대전":"daejeon",
+  "울산광역시":"ulsan", "울산":"ulsan",
+  "세종특별자치시":"sejong", "세종시":"sejong", "세종":"sejong",
+  "경기도":"gyeonggi", "경기":"gyeonggi",
+  "강원도":"gangwon", "강원특별자치도":"gangwon", "강원":"gangwon",
+  "충청북도":"chungbuk", "충북":"chungbuk",
+  "충청남도":"chungnam", "충남":"chungnam",
+  "전라북도":"jeonbuk", "전북특별자치도":"jeonbuk", "전북":"jeonbuk",
+  "전라남도":"jeonnam", "전남":"jeonnam",
+  "경상북도":"gyeongbuk", "경북":"gyeongbuk",
+  "경상남도":"gyeongnam", "경남":"gyeongnam",
+  "제주특별자치도":"jeju", "제주도":"jeju", "제주":"jeju",
+};
+
+// 내부 ID → KOSTAT 시도 코드(SIG_CD 앞 2자리)
+const PROVINCE_CODE_MAP = {
+  seoul:"11", busan:"26", daegu:"27", incheon:"28", gwangju:"29",
+  daejeon:"30", ulsan:"31", sejong:"36", gyeonggi:"41", gangwon:"42",
+  chungbuk:"43", chungnam:"44", jeonbuk:"45", jeonnam:"46",
+  gyeongbuk:"47", gyeongnam:"48", jeju:"50",
+};
+
+// ========== 헬퍼 함수 ==========
+function getName(props) {
+  // 다양한 속성 키 대응 (GeoJSON 출처에 따라 다름)
+  return props.name || props.NAME || props.CTP_KOR_NM ||
+         props.SIG_KOR_NM || props.name_kor || '';
+}
+
+function getCode(props) {
+  // 다양한 코드 속성 키 대응
+  return props.code || props.CODE || props.SIG_CD ||
+         props.CTPRVN_CD || props.sig_cd || '';
+}
+
+function getProvinceId(name) {
+  if (!name) return null;
+  if (PROVINCE_ID_MAP[name]) return PROVINCE_ID_MAP[name];
+  // 부분 매칭 시도
+  for (const [k, v] of Object.entries(PROVINCE_ID_MAP)) {
+    if (name.includes(k) || k.includes(name)) return v;
+  }
+  return null;
+}
+
+function shortName(fullName) {
+  // "강원도" → "강원", "서울특별시" → "서울"
+  return fullName
+    .replace(/특별자치시$/, '')
+    .replace(/특별자치도$/, '')
+    .replace(/특별시$/, '')
+    .replace(/광역시$/, '')
+    .replace(/도$/, '');
+}
+
+function shortMuniName(fullName) {
+  // "강릉시" → "강릉", "기장군" → "기장", "성북구" → "성북"
+  return fullName
+    .replace(/시$/, '')
+    .replace(/군$/, '')
+    .replace(/구$/, '');
+}
+
+// ========== 데이터 ==========
+let provinceData = null;
+let muniData = null;
+
+// ========== 초기화 ==========
+async function fetchFirstSuccess(urls, label) {
+  let lastErr = null;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { cache: 'force-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      console.log(`[${label}] 성공:`, url);
+      return data;
+    } catch (e) {
+      console.warn(`[${label}] 실패 (${url}):`, e.message);
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('모든 CDN 실패');
+}
+
+function showError(message) {
+  document.getElementById('loadingView').style.display = 'none';
+  document.getElementById('errorView').style.display = 'flex';
+  const detailEl = document.getElementById('errDetail');
+  if (detailEl) detailEl.textContent = message;
+}
+
+async function retryLoad() {
+  document.getElementById('errorView').style.display = 'none';
+  document.getElementById('loadingView').style.display = 'flex';
+  init();
+}
+
+async function init() {
+  // file:// 프로토콜 사전 감지 (로컬 더블클릭으로 연 경우)
+  if (location.protocol === 'file:') {
+    showError('파일을 컴퓨터에서 직접 열었습니다 (file:// 프로토콜). 아래 방법 중 하나를 선택해주세요.');
+    return;
+  }
+  try {
+    // GeoJSON 2개 + 구글 시트 CSV 동시 로드
+    const [pData, mData, sheetProjects] = await Promise.all([
+      fetchFirstSuccess(PROV_URLS, '시도'),
+      fetchFirstSuccess(MUNI_URLS, '시군구'),
+      loadProjects().catch(e => {
+        // 시트 로드 실패해도 지도는 뜨도록
+        console.warn('[시트] 로드 실패, 빈 데이터로 계속:', e);
+        return {};
+      }),
+    ]);
+    provinceData = pData;
+    muniData = mData;
+    projects = sheetProjects;
+
+    document.getElementById('loadingView').style.display = 'none';
+    document.getElementById('mapView').style.display = 'flex';
+    renderMainMap();
+  } catch (err) {
+    console.error('GeoJSON 로드 오류:', err);
+    showError(`네트워크 오류: ${err.message || err}`);
+  }
+}
+
+function showMap() {
+  document.getElementById('mapView').style.display = 'flex';
+  document.getElementById('detailView').classList.remove('active');
+  document.getElementById('breadcrumb').innerHTML =
+    '<span onclick="showMap()">대한민국</span>';
+}
+
+// ========== 전국 지도 렌더링 ==========
+function renderMainMap() {
+  const W = 500, H = 700;
+  const svg = d3.select('#koreaMap').attr('viewBox', `0 0 ${W} ${H}`);
+  svg.selectAll('*').remove();
+
+  // Korea-fitted Mercator projection
+  const projection = d3.geoMercator().fitExtent([[20, 20], [W-20, H-20]], provinceData);
+  const pathGen = d3.geoPath(projection);
+
+  let totalWorks = 0, activeRegions = 0;
+  const provincesWithLabels = [];
+
+  // 1) 도형 먼저 그리기 (라벨이 위에 오도록)
+  provinceData.features.forEach(feature => {
+    const fullName = getName(feature.properties);
+    const id = getProvinceId(fullName);
+    const works = (id && projects[id]?.works) || [];
+    const count = works.length;
+    if (count > 0) { totalWorks += count; activeRegions++; }
+
+    const path = svg.append('path')
+      .attr('d', pathGen(feature))
+      .attr('class', 'province-path' + (count > 0 ? ' has-work' : '') + (id ? ' clickable' : ''));
+
+    if (id) path.on('click', () => showDetail(id, fullName));
+
+    const [cx, cy] = pathGen.centroid(feature);
+    provincesWithLabels.push({ x: cx, y: cy, name: shortName(fullName), count });
+  });
+
+  // 2) 라벨과 뱃지 위에 그리기
+  provincesWithLabels.forEach(d => {
+    svg.append('text')
+      .attr('x', d.x).attr('y', d.y)
+      .attr('class', 'province-label')
+      .text(d.name);
+
+    if (d.count > 0) {
+      const bx = d.x + 22, by = d.y - 14;
+      svg.append('circle')
+        .attr('cx', bx).attr('cy', by)
+        .attr('r', 11)
+        .attr('class', 'count-badge');
+      svg.append('text')
+        .attr('x', bx).attr('y', by + 4)
+        .attr('class', 'count-text')
+        .text(d.count + '건');
+    }
+  });
+
+  document.getElementById('totalStat').textContent =
+    `총 ${totalWorks}건 · ${activeRegions}개 지역`;
+}
+
+// ========== 상세 페이지 렌더링 ==========
+function showDetail(id, fullProvinceName) {
+  const data = projects[id];
+  if (!data || data.works.length === 0) {
+    alert(shortName(fullProvinceName) + ' 지역은 아직 등록된 작업이 없습니다');
+    return;
+  }
+  document.getElementById('mapView').style.display = 'none';
+  document.getElementById('detailView').classList.add('active');
+  document.getElementById('detailTitle').textContent =
+    `${shortName(fullProvinceName)} (${data.works.length}건)`;
+  document.getElementById('breadcrumb').innerHTML =
+    '<span onclick="showMap()">대한민국</span>' +
+    '<span class="sep">›</span>' +
+    `<span>${shortName(fullProvinceName)}</span>`;
+
+  // SVG 컨테이너 크기 측정 후 렌더링 (aspect-ratio가 적용된 후)
+  requestAnimationFrame(() => renderDetailMap(id, fullProvinceName, data));
+}
+
+function renderDetailMap(id, fullProvinceName, data) {
+  const W = 1000, H = 750; // viewBox 4:3 비율
+  const canvas = document.getElementById('regionCanvas');
+
+  // 기존 카드 제거
+  canvas.querySelectorAll('.photo-card').forEach(el => el.remove());
+
+  const svg = d3.select('#detailMap').attr('viewBox', `0 0 ${W} ${H}`);
+  svg.selectAll('*').remove();
+
+  // 진단: SVG와 컨테이너의 실제 크기 출력
+  const svgEl = document.getElementById('detailMap');
+  const svgRect = svgEl.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
+  console.log('[상세] 컨테이너 크기:', canvasRect.width, '×', canvasRect.height);
+  console.log('[상세] SVG 크기:', svgRect.width, '×', svgRect.height);
+
+  // 해당 시도 feature 찾기
+  const provFeature = provinceData.features.find(f =>
+    getName(f.properties) === fullProvinceName);
+  console.log('[상세] 시도 feature:', fullProvinceName, !!provFeature);
+  if (!provFeature) {
+    console.warn('[상세] 시도 feature를 찾지 못했습니다');
+    return;
+  }
+
+  // 시군구 필터링: (1) 코드 prefix 매칭을 우선, (2) 실패 시 geoContains 폴백
+  const provCode = PROVINCE_CODE_MAP[id];
+  let subRegions = [];
+
+  if (provCode) {
+    subRegions = muniData.features.filter(f => {
+      const code = String(getCode(f.properties) || '');
+      return code.startsWith(provCode);
+    });
+  }
+
+  // 폴백 1: 코드로 안 잡히면 geoContains
+  if (subRegions.length === 0) {
+    console.warn('[상세] 코드 매칭 실패, geoContains 폴백');
+    subRegions = muniData.features.filter(f => {
+      try {
+        const c = d3.geoCentroid(f);
+        return d3.geoContains(provFeature, c);
+      } catch (e) { return false; }
+    });
+  }
+
+  // 폴백 2: 여전히 없으면 bounding box 교차
+  if (subRegions.length === 0) {
+    console.warn('[상세] geoContains 폴백도 실패, bbox 교차 시도');
+    const pathTmp = d3.geoPath();
+    const provBB = pathTmp.bounds(provFeature);
+    subRegions = muniData.features.filter(f => {
+      try {
+        const b = pathTmp.bounds(f);
+        return !(b[1][0] < provBB[0][0] || b[0][0] > provBB[1][0] ||
+                 b[1][1] < provBB[0][1] || b[0][1] > provBB[1][1]);
+      } catch (e) { return false; }
+    });
+  }
+
+  console.log('[상세] 시군구 개수:', subRegions.length);
+
+  // 이 시도 영역에 맞춰 projection 설정 (지도가 가운데에 자리잡도록)
+  const fc = subRegions.length > 0
+    ? { type: 'FeatureCollection', features: subRegions }
+    : provFeature;
+  const projection = d3.geoMercator()
+    .fitExtent([[W*0.22, H*0.15], [W*0.78, H*0.85]], fc);
+  const pathGen = d3.geoPath(projection);
+
+  // 0) 시도 전체 윤곽 (시군구가 비어있어도 뭔가 보이도록 배경 깔기)
+  const provPath = pathGen(provFeature);
+  svg.append('path')
+    .attr('d', provPath)
+    .attr('fill', '#eaf0e8')
+    .attr('stroke', '#1e3a2a')
+    .attr('stroke-width', 1.5);
+
+  // 1) 모든 시군구 그리기
+  const workedRegionFeatures = {};
+  subRegions.forEach(f => {
+    const subName = getName(f.properties);
+    const matched = data.works.find(w =>
+      subName.includes(w.region) || w.region.includes(shortMuniName(subName)));
+    const hasWork = !!matched;
+    if (hasWork) workedRegionFeatures[matched.region] = f;
+
+    svg.append('path')
+      .attr('d', pathGen(f))
+      .attr('class', 'sub-region-path' + (hasWork ? ' has-work' : ''));
+  });
+
+  // 시군구 매칭 실패한 작업은 시도 내부 적당한 지점을 가짜 feature로 대체
+  // (이렇게 해야 사진 카드/화살표가 반드시 나옴)
+  const provCentroid = pathGen.centroid(provFeature);
+  data.works.forEach(work => {
+    if (workedRegionFeatures[work.region]) return;
+    // 시도 내부 랜덤 분산 위치
+    const hash = [...work.region].reduce((h, c) => h * 31 + c.charCodeAt(0), 7) | 0;
+    const ang = (Math.abs(hash) % 360) * Math.PI / 180;
+    const r = 60 + (Math.abs(hash >> 8) % 60);
+    workedRegionFeatures[work.region] = {
+      __fake: true,
+      __centroid: [provCentroid[0] + Math.cos(ang) * r,
+                   provCentroid[1] + Math.sin(ang) * r],
+    };
+    console.log('[상세] 시군구 매칭 실패 → 가짜 위치 사용:', work.region);
+  });
+
+  // 2) 작업이 있는 시군구에 점과 라벨
+  Object.entries(workedRegionFeatures).forEach(([regionName, feature]) => {
+    const [cx, cy] = feature.__fake
+      ? feature.__centroid
+      : pathGen.centroid(feature);
+
+    svg.append('circle')
+      .attr('cx', cx).attr('cy', cy)
+      .attr('r', 8)
+      .attr('class', 'sub-region-dot');
+
+    // 라벨 배경 + 텍스트
+    const text = regionName;
+    const w = text.length * 12 + 16;
+    svg.append('rect')
+      .attr('x', cx - w/2).attr('y', cy + 12)
+      .attr('width', w).attr('height', 22)
+      .attr('rx', 4)
+      .attr('class', 'sub-region-name-bg');
+    svg.append('text')
+      .attr('x', cx).attr('y', cy + 28)
+      .attr('class', 'sub-region-name-text')
+      .text(text);
+  });
+
+  // 3) 사진 카드 + 화살표 배치
+  data.works.forEach(work => {
+    const feature = workedRegionFeatures[work.region];
+    if (!feature) return;
+
+    const [cx, cy] = feature.__fake
+      ? feature.__centroid
+      : pathGen.centroid(feature);
+
+    // 같은 세부 지역의 작업 인덱스 (여러 개일 때 부채꼴로 분산)
+    const sameRegionWorks = data.works.filter(w => w.region === work.region);
+    const idx = sameRegionWorks.indexOf(work);
+    const total = sameRegionWorks.length;
+
+    // 캔버스 중심에서 바깥쪽 방향 + 분산
+    const dx = cx - W/2;
+    const dy = cy - H/2;
+    const baseAngle = Math.atan2(dy, dx);
+    const spread = (idx - (total-1)/2) * 0.65;
+    const angle = baseAngle + spread;
+
+    // 카드 위치 (지역에서 충분히 바깥으로)
+    const dist = 230;
+    let cardX = cx + Math.cos(angle) * dist;
+    let cardY = cy + Math.sin(angle) * dist;
+
+    // 가장자리 클램프
+    cardX = Math.max(90, Math.min(W - 90, cardX));
+    cardY = Math.max(70, Math.min(H - 70, cardY));
+
+    // 곡선 화살표
+    const midX = (cx + cardX) / 2;
+    const midY = (cy + cardY) / 2;
+    const ndx = cardX - cx, ndy = cardY - cy;
+    const len = Math.sqrt(ndx*ndx + ndy*ndy) || 1;
+    const offset = len * 0.18;
+    const ctrlX = midX + (-ndy/len) * offset;
+    const ctrlY = midY + (ndx/len) * offset;
+
+    svg.append('path')
+      .attr('class', 'arrow-path')
+      .attr('d', `M ${cx} ${cy} Q ${ctrlX} ${ctrlY} ${cardX} ${cardY}`);
+
+    // HTML 사진 카드 (% 좌표로 SVG와 정렬)
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    card.style.left = (cardX / W * 100) + '%';
+    card.style.top = (cardY / H * 100) + '%';
+    card.onclick = () => openModal(work);
+    card.innerHTML =
+      `<img src="${work.img}" alt="">` +
+      `<div class="caption">${work.title}</div>`;
+    canvas.appendChild(card);
+  });
+}
+
+// ========== 모달 ==========
+function openModal(work) {
+  document.getElementById('modalImg').src = work.img;
+  document.getElementById('modalTitle').textContent = work.title;
+  document.getElementById('modalDate').textContent = work.date;
+  document.getElementById('modalLocation').textContent = work.region;
+  document.getElementById('modalType').textContent = work.type;
+  document.getElementById('modalDesc').textContent = work.desc;
+  document.getElementById('modal').classList.add('active');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+}
+function openContact() {
+  document.getElementById('contactModal').classList.add('active');
+}
+function closeContact() {
+  document.getElementById('contactModal').classList.remove('active');
+}
+
+// 시작
+init();
+</script>
+</body>
+</html>
